@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T2Die - Actuarial Longevity Estimator</title>
+    <!-- PWA Web App Manifest & Mobile Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='68' x='18' font-size='60'>💀</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='68' x='18' font-size='60'>💀</text></svg>">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="T2Die">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        .skull-glow {
+            filter: drop-shadow(0px 3px 8px rgba(0, 0, 0, 0.6));
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- Skull & Crossbones SVG Emblem -->
+                <div class="w-12 h-12 bg-slate-950 rounded-xl shadow-inner flex items-center justify-center p-1 border border-amber-900/40 skull-glow">
+                    <svg class="w-full h-full transform hover:-rotate-12 hover:scale-105 transition-transform duration-300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="boneBase" x1="20" y1="10" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#FFFFFF" />
+                                <stop offset="45%" stop-color="#F5F0E1" />
+                                <stop offset="85%" stop-color="#E8DFC7" />
+                                <stop offset="100%" stop-color="#D7CAAA" />
+                            </linearGradient>
+
+                            <radialGradient id="socketDarkness" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#050505" />
+                                <stop offset="70%" stop-color="#14110E" />
+                                <stop offset="100%" stop-color="#2B241C" />
+                            </radialGradient>
+
+                            <linearGradient id="creamShadow" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#DDD1B3" stop-opacity="0.8"/>
+                                <stop offset="100%" stop-color="#BAA77E" stop-opacity="0.9"/>
+                            </linearGradient>
+
+                            <filter id="boneShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.7"/>
+                            </filter>
+                        </defs>
+
+                        <g transform="rotate(12 50 50)">
+                            <!-- Crossbones -->
+                            <g filter="url(#boneShadow)">
+                                <path d="M 12 18 C 9 14 3 17 5 22 C 7 26 13 25 18 30 L 82 70 C 87 75 93 74 95 78 C 97 83 91 86 88 82 C 84 78 81 74 76 72 L 14 26 C 11 23 8 21 12 18 Z" fill="url(#boneBase)" />
+                                <circle cx="8" cy="18" r="4.5" fill="#EADBCE" />
+                                <circle cx="16" cy="14" r="4" fill="#F3E9DA" />
+                                <circle cx="92" cy="82" r="4.5" fill="#D2C3A3" />
+                                <circle cx="85" cy="86" r="4" fill="#CBB996" />
+
+                                <path d="M 18 70 C 13 75 7 74 5 78 C 3 83 9 86 12 82 C 16 78 20 74 24 72 L 86 26 C 89 23 93 25 95 22 C 97 17 91 14 88 18 C 83 22 78 26 76 30 L 14 70 Z" fill="url(#boneBase)" />
+                                <circle cx="8" cy="82" r="4.5" fill="#D2C3A3" />
+                                <circle cx="15" cy="86" r="4" fill="#CBB996" />
+                                <circle cx="92" cy="18" r="4.5" fill="#EADBCE" />
+                                <circle cx="84" cy="14" r="4" fill="#F3E9DA" />
+                            </g>
+
+                            <!-- Skull -->
+                            <g filter="url(#boneShadow)">
+                                <path d="M 24 45 C 22 24 34 10 50 10 C 66 10 78 24 76 45 C 76 53 72 60 67 65 L 66 76 C 66 78 64 80 62 80 L 38 80 C 36 80 34 78 34 76 L 33 65 C 28 60 24 53 24 45 Z" fill="url(#boneBase)" />
+                                <path d="M 25 45 C 25 32 33 18 45 13 C 33 18 28 32 29 47 C 30 54 34 60 36 63 C 31 59 26 53 25 45 Z" fill="url(#creamShadow)" />
+                                <path d="M 75 45 C 75 32 67 18 55 13 C 67 18 72 32 71 47 C 70 54 66 60 64 63 C 69 59 74 53 75 45 Z" fill="url(#creamShadow)" opacity="0.6" />
+                                <path d="M 31 34 Q 50 38 69 34 Q 50 31 31 34 Z" fill="#C6B592" opacity="0.4" />
+
+                                <path d="M 31 38 C 29 47 37 54 44 50 C 47 47 44 37 37 36 C 33 35 31 36 31 38 Z" fill="url(#socketDarkness)" />
+                                <path d="M 69 38 C 71 47 63 54 56 50 C 53 47 56 37 63 36 C 67 35 69 36 69 38 Z" fill="url(#socketDarkness)" />
+
+                                <path d="M 33 50 C 37 53 42 49 43 47" stroke="#E5D9BF" stroke-width="0.8" stroke-linecap="round" />
+                                <path d="M 67 50 C 63 53 58 49 57 47" stroke="#E5D9BF" stroke-width="0.8" stroke-linecap="round" />
+
+                                <path d="M 50 51 L 45 61 C 44 63 47 65 50 64 C 53 65 56 63 55 61 L 50 51 Z" fill="url(#socketDarkness)" />
+                                <line x1="50" y1="53" x2="50" y2="62" stroke="#1A1510" stroke-width="1" />
+
+                                <g fill="#FAF6EE" stroke="#3A3023" stroke-width="0.8">
+                                    <path d="M 37 68 Q 50 67 63 68 L 62 73 Q 50 74 38 73 Z" fill="#EADCC1" />
+                                    <line x1="41" y1="68" x2="41" y2="73" stroke="#2C2317" stroke-width="0.9" />
+                                    <line x1="45" y1="67.5" x2="45" y2="73.5" stroke="#2C2317" stroke-width="0.9" />
+                                    <line x1="49" y1="67.2" x2="49" y2="73.8" stroke="#2C2317" stroke-width="0.9" />
+                                    <line x1="51" y1="67.2" x2="51" y2="73.8" stroke="#2C2317" stroke-width="0.9" />
+                                    <line x1="55" y1="67.5" x2="55" y2="73.5" stroke="#2C2317" stroke-width="0.9" />
+                                    <line x1="59" y1="68" x2="59" y2="73" stroke="#2C2317" stroke-width="0.9" />
+
+                                    <path d="M 39 74 Q 50 75 61 74 L 60 78 Q 50 79 40 78 Z" fill="#DFD0B3" />
+                                    <line x1="43" y1="74" x2="43" y2="78" stroke="#2C2317" stroke-width="0.7" />
+                                    <line x1="47" y1="74.2" x2="47" y2="78.5" stroke="#2C2317" stroke-width="0.7" />
+                                    <line x1="50" y1="74.5" x2="50" y2="78.8" stroke="#2C2317" stroke-width="0.7" />
+                                    <line x1="53" y1="74.2" x2="53" y2="78.5" stroke="#2C2317" stroke-width="0.7" />
+                                    <line x1="57" y1="74" x2="57" y2="78" stroke="#2C2317" stroke-width="0.7" />
+                                </g>
+
+                                <path d="M 46 12 L 48 20 L 45 25 L 47 30" stroke="#524431" stroke-width="0.7" fill="none" opacity="0.7" stroke-linejoin="round" />
+                                <path d="M 68 53 L 64 57 L 66 62" stroke="#524431" stroke-width="0.6" fill="none" opacity="0.6" stroke-linejoin="round" />
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-brand-600">T2Die</h1>
+                    <p id="headerSubtitle" class="text-xs text-slate-500 dark:text-slate-400 font-medium" data-i18n="appSubtitle">Actuarial Longevity Estimator</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <!-- Language Switch -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-700/80 p-1 rounded-xl border border-slate-200 dark:border-slate-600 text-xs font-bold">
+                    <button id="langEnBtn" class="px-2.5 py-1 rounded-lg transition-all bg-brand-600 text-white shadow-sm">EN</button>
+                    <button id="langFrBtn" class="px-2.5 py-1 rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">FR</button>
+                </div>
+
+                <!-- About Button -->
+                <button id="aboutBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 transition-colors flex items-center space-x-1.5">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span data-i18n="aboutBtn">About</span>
+                </button>
+
+                <button id="themeToggleBtn" aria-label="Toggle dark mode" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none">
+                    <i class="fa-solid fa-moon text-lg dark:hidden"></i>
+                    <i class="fa-solid fa-sun text-lg hidden dark:block text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal: About T2Die -->
+    <div id="aboutModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 relative transform transition-all scale-95 opacity-0" id="aboutModalContent">
+            
+            <button id="closeAboutBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-12 h-12 bg-slate-950 rounded-xl shadow border border-amber-900/40 flex items-center justify-center p-1 skull-glow">
+                    <svg class="w-full h-full transform -rotate-6" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="rotate(12 50 50)">
+                            <path d="M 12 18 C 9 14 3 17 5 22 L 82 70 C 87 75 93 74 95 78 Z" fill="#D7CAAA" />
+                            <path d="M 18 70 C 13 75 7 74 5 78 L 86 26 C 89 23 93 25 95 22 Z" fill="#D7CAAA" />
+                            <path d="M 24 45 C 22 24 34 10 50 10 C 66 10 78 24 76 45 C 76 53 72 60 67 65 L 66 76 L 34 76 L 33 65 C 28 60 24 53 24 45 Z" fill="#F5F0E1" />
+                            <path d="M 31 38 C 29 47 37 54 44 50 C 47 47 44 37 37 36 Z" fill="#050505" />
+                            <path d="M 69 38 C 71 47 63 54 56 50 C 53 47 56 37 63 36 Z" fill="#050505" />
+                            <path d="M 50 51 L 45 61 C 47 65 53 65 55 61 Z" fill="#050505" />
+                            <path d="M 37 68 Q 50 67 63 68 L 62 75 Q 50 76 38 75 Z" fill="#EADCC1" stroke="#3A3023" stroke-width="0.8" />
+                        </g>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">T2Die</h3>
+                    <p class="text-xs text-rose-500 font-medium" data-i18n="appSubtitle">Actuarial Longevity Estimator</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-1 text-xs border border-slate-100 dark:border-slate-700">
+                    <p><strong class="text-slate-800 dark:text-slate-100" data-i18n="creatorLabel">Creator:</strong> Stephen RICHARDS</p>
+                    <p><strong class="text-slate-800 dark:text-slate-100" data-i18n="assistedLabel">Assisted by:</strong> Gemini AI</p>
+                </div>
+
+                <div class="space-y-2 text-xs leading-relaxed">
+                    <p data-i18n="aboutDesc1">
+                        Welcome to <strong>T2Die</strong>—a witty, cheeky, yet mathematically grounded actuarial mortality estimator! 
+                    </p>
+                    <p data-i18n="aboutDesc2">
+                        Whether you are planning your retirement standard or simply curious how much your daily habits skew your statistical expiration date, <strong>T2Die</strong> pairs demographic life expectancy baselines (from global statistical datasets like ONS and INSEE) with body metrics, lifestyle factors, personal health conditions, and occupational hazard scores.
+                    </p>
+                    <p class="text-slate-500 dark:text-slate-400 italic" data-i18n="aboutDesc3">
+                        100% offline, privacy-focused, and free of pop-up ads. Remember: statistics predict cohorts, not individuals—so keep exercising and enjoy the ride!
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+                <button id="closeAboutModalBtn" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors" data-i18n="aboutClose">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Quick Preset Controls -->
+        <div class="mb-6 bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                <i class="fa-solid fa-wand-magic-sparkles text-brand-500"></i>
+                <span data-i18n="presetsLabel">Quick Load Test Profiles:</span>
+            </span>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="loadPreset('healthy')" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 text-xs font-medium transition-colors" data-i18n="presetHealthy">
+                    🌱 Healthy Desk Worker
+                </button>
+                <button onclick="loadPreset('sedentary')" class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 text-xs font-medium transition-colors" data-i18n="presetSmoker">
+                    🚬 Heavy Smoker / Sedentary
+                </button>
+                <button onclick="loadPreset('senior')" class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 text-xs font-medium transition-colors" data-i18n="presetSenior">
+                    🏃 Active Senior (65+)
+                </button>
+                <button onclick="loadPreset('drinker')" class="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 text-xs font-medium transition-colors" data-i18n="presetDrinker">
+                    🍺 Sedentary Heavy Drinker
+                </button>
+                <button onclick="loadPreset('smoker_drinker')" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 text-xs font-medium transition-colors" data-i18n="presetSmokerDrinker">
+                    💀 Sedentary Heavy Smoker & Drinker
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Panel: Input Controls (7 Cols on LG) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Section 1: Baseline Demographics -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center space-x-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-700">
+                        <i class="fa-solid fa-user text-brand-500 text-lg"></i>
+                        <h2 class="text-md font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="secDemographics">1. Baseline Demographics</h2>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Current Age -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1"><span data-i18n="labelAge">Current Age:</span> <span id="ageVal" class="font-bold text-brand-600 dark:text-brand-400">45</span> <span data-i18n="unitYears">years</span></label>
+                            <input type="range" id="age" min="18" max="95" value="45" class="w-full accent-brand-500 cursor-pointer">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>18</span>
+                                <span>55</span>
+                                <span>95</span>
+                            </div>
+                        </div>
+
+                        <!-- Biological Sex -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelSex">Biological Sex</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center justify-center p-2.5 border rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-slate-300 dark:border-slate-600" id="sexMaleLabel">
+                                    <input type="radio" name="sex" value="male" checked class="hidden" onchange="updateSexStyle()">
+                                    <i class="fa-solid fa-mars text-blue-500 mr-2"></i> <span data-i18n="sexMale">Male</span>
+                                </label>
+                                <label class="flex items-center justify-center p-2.5 border rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-slate-300 dark:border-slate-600" id="sexFemaleLabel">
+                                    <input type="radio" name="sex" value="female" class="hidden" onchange="updateSexStyle()">
+                                    <i class="fa-solid fa-venus text-pink-500 mr-2"></i> <span data-i18n="sexFemale">Female</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Regional Baseline Selector -->
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelRegion">Regional Actuarial Data Baseline</label>
+                            <select id="region" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="uk" selected data-i18n="optRegionUk">United Kingdom (ONS Official Tables)</option>
+                                <option value="fr" data-i18n="optRegionFr">France (INSEE Official Tables)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Physical Profile & Personal Health History -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-700">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-ruler-vertical text-brand-500 text-lg"></i>
+                            <h2 class="text-md font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="secPhysical">2. Physical Profile & Health History</h2>
+                        </div>
+                        <div class="text-xs bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full font-medium text-slate-600 dark:text-slate-300">
+                            BMI: <span id="bmiDisplay" class="font-bold text-slate-900 dark:text-white">24.2</span> (<span id="bmiCategory">Normal</span>)
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                        <!-- Height -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1"><span data-i18n="labelHeight">Height:</span> <span id="heightVal" class="font-bold text-brand-600 dark:text-brand-400">175</span> cm</label>
+                            <input type="range" id="height" min="130" max="210" value="175" class="w-full accent-brand-500 cursor-pointer">
+                        </div>
+
+                        <!-- Weight -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1"><span data-i18n="labelWeight">Weight:</span> <span id="weightVal" class="font-bold text-brand-600 dark:text-brand-400">74</span> kg</label>
+                            <input type="range" id="weight" min="40" max="160" value="74" class="w-full accent-brand-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Personal Health History Checkboxes -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-700">
+                        <label class="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-200" data-i18n="labelHealthHistory">Personal Medical Conditions (Check all that apply):</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <label class="flex items-center p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                <input type="checkbox" id="condCardio" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                <span data-i18n="condCardioLabel">Cardiovascular / Heart Disease</span>
+                            </label>
+                            <label class="flex items-center p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                <input type="checkbox" id="condStroke" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                <span data-i18n="condStrokeLabel">Stroke / TIA History</span>
+                            </label>
+                            <label class="flex items-center p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                <input type="checkbox" id="condCancer" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                <span data-i18n="condCancerLabel">Cancer History (Active / Remission)</span>
+                            </label>
+                            <label class="flex items-center p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                <input type="checkbox" id="condDiabetes" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                <span data-i18n="condDiabetesLabel">Type 2 Diabetes</span>
+                            </label>
+                            <label class="flex items-center p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors sm:col-span-2">
+                                <input type="checkbox" id="condHypertension" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                <span data-i18n="condHypertensionLabel">Hypertension / High Blood Pressure</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Lifestyle & Environment -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center space-x-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-700">
+                        <i class="fa-solid fa-heart-pulse text-brand-500 text-lg"></i>
+                        <h2 class="text-md font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="secLifestyle">3. Lifestyle & Environment</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Smoking Status -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelSmoking">Tobacco Usage</label>
+                            <select id="smoking" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="never" data-i18n="optSmokeNever">Never smoked / Non-smoker</option>
+                                <option value="ex_long" data-i18n="optSmokeExLong">Ex-smoker (Quit > 10 years)</option>
+                                <option value="ex_med" data-i18n="optSmokeExMed">Ex-smoker (Quit 5–10 years)</option>
+                                <option value="ex_short" data-i18n="optSmokeExShort">Ex-smoker (Quit < 5 years)</option>
+                                <option value="light" data-i18n="optSmokeLight">Light smoker (< 10 daily)</option>
+                                <option value="heavy" data-i18n="optSmokeHeavy">Heavy smoker (10+ daily)</option>
+                            </select>
+                        </div>
+
+                        <!-- Exercise Tiers -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelExercise">Exercise / Movement (Weekly)</label>
+                            <select id="exercise" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="less_half" data-i18n="optExLessHalf">Less than half hour / week</option>
+                                <option value="over_half" data-i18n="optExOverHalf">0.5 – 1 hour / week</option>
+                                <option value="over_one" selected data-i18n="optExOverOne">1 – 3 hours / week</option>
+                                <option value="over_three" data-i18n="optExOverThree">Over 3 hours / week</option>
+                            </select>
+                        </div>
+
+                        <!-- Alcohol Intake -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelAlcohol">Alcohol Consumption</label>
+                            <select id="alcohol" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="none" data-i18n="optAlcNone">None / Rare (<1 unit/week)</option>
+                                <option value="moderate" selected data-i18n="optAlcMod">Moderate (1–14 units/week)</option>
+                                <option value="high" data-i18n="optAlcHigh">High (15–28 units/week)</option>
+                                <option value="extreme" data-i18n="optAlcExtreme">Heavy (28+ units/week)</option>
+                            </select>
+                        </div>
+
+                        <!-- Occupational Hazard -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelOccupation">Occupational Risk Level</label>
+                            <select id="occupation" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="low" selected data-i18n="optOccLow">Low Risk (Office / Remote)</option>
+                                <option value="medium" data-i18n="optOccMed">Medium Risk (Active / Retail)</option>
+                                <option value="high" data-i18n="optOccHigh">High Risk (Construction / Hazard)</option>
+                            </select>
+                        </div>
+
+                        <!-- Family History Brackets (Clarified for 6 Direct Ancestors) -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1"><span data-i18n="labelGenetics">Earliest Deceased Relative (Parents/Grandparents)</span> <i class="fa-solid fa-circle-question text-slate-400 text-xs ml-1" title="Select based on the shortest-lived parent or grandparent from natural/medical causes"></i></label>
+                            <select id="genetics" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="exceptional" data-i18n="optGenHigh">All Lived Very Long (All 90+ years)</option>
+                                <option value="above_avg" data-i18n="optGenAboveAvg">Most Lived Above Average (80–90 years)</option>
+                                <option value="average" selected data-i18n="optGenAvg">Average / Normal Lifespans (73–80 years)</option>
+                                <option value="premature" data-i18n="optGenLow">At least 1 Premature Death (< 73 years)</option>
+                            </select>
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1" data-i18n="geneticsHint">Based on the shortest non-accidental lifespan among your 6 parents & grandparents.</p>
+                        </div>
+
+                        <!-- Actuarially Significant Hereditary Disease Filter (Multi-Select Checkboxes) -->
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium mb-1" data-i18n="labelGeneticsCause">Hereditary Causes of Premature Deaths (Check all that apply):</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <label class="flex items-center p-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                    <input type="checkbox" id="causeCardio" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                    <span data-i18n="optCauseCardio">Cardiovascular / Heart Attack</span>
+                                </label>
+                                <label class="flex items-center p-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                    <input type="checkbox" id="causeStroke" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                    <span data-i18n="optCauseStroke">Cerebrovascular / Stroke</span>
+                                </label>
+                                <label class="flex items-center p-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                    <input type="checkbox" id="causeCancer" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                    <span data-i18n="optCauseCancer">Hereditary Cancer</span>
+                                </label>
+                                <label class="flex items-center p-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                    <input type="checkbox" id="causeDiabetes" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                    <span data-i18n="optCauseDiabetes">Type 2 Diabetes / Renal</span>
+                                </label>
+                                <label class="flex items-center p-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors sm:col-span-2">
+                                    <input type="checkbox" id="causeDementia" class="w-4 h-4 text-brand-600 rounded border-slate-300 accent-brand-500 mr-2.5">
+                                    <span data-i18n="optCauseDementia">Neurodegenerative / Early Dementia</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Output & Actuarial Summary (5 Cols on LG) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Main KPI Card -->
+                <div class="bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-2xl p-6 shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 opacity-10 text-white pointer-events-none">
+                        <i class="fa-solid fa-hourglass-half text-9xl"></i>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 class="text-xs uppercase tracking-widest text-brand-100 font-semibold" data-i18n="kpiHeader">Actuarial Longevity Projection</h2>
+                        <div class="flex items-center space-x-2 z-10">
+                            <button id="exportHtmlBtn" class="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shadow transition-all transform hover:scale-105 flex items-center space-x-1.5 cursor-pointer">
+                                <i class="fa-solid fa-download"></i>
+                                <span id="exportHtmlBtnText" data-i18n="btnExportHtml">Export HTML</span>
+                            </button>
+                            <button id="shareBtn" class="px-2.5 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-semibold backdrop-blur-sm transition-colors flex items-center space-x-1.5 cursor-pointer">
+                                <i class="fa-regular fa-copy"></i>
+                                <span id="shareBtnText" data-i18n="btnCopy">Copy</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Projection Number -->
+                    <div class="my-4">
+                        <div class="flex items-baseline space-x-2">
+                            <span id="estimatedAge" class="text-5xl font-black tracking-tight text-white">84.5</span>
+                            <span class="text-lg font-medium text-brand-100" data-i18n="kpiEstimatedSuffix">years estimated lifespan</span>
+                        </div>
+                    </div>
+
+                    <!-- Secondary KPI Stats -->
+                    <div class="grid grid-cols-2 gap-4 my-3 pt-3 border-t border-brand-500/40">
+                        <div>
+                            <div class="text-xs text-brand-100 font-medium" data-i18n="kpiRemainingYears">Remaining Years</div>
+                            <div id="remainingYears" class="text-2xl font-bold text-white">39.5</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-brand-100 font-medium" data-i18n="kpiNetShift">Actuarial Net Shift</div>
+                            <div id="netShift" class="text-2xl font-bold text-emerald-300">+4.5 yrs</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-brand-500/30 flex justify-between text-xs text-brand-100 font-medium">
+                        <div>
+                            <span data-i18n="kpiDays">Est. Remaining Days:</span> <strong id="remainingDays" class="text-white">14,417</strong>
+                        </div>
+                        <div>
+                            <span data-i18n="kpiWeeks">Weeks:</span> <strong id="remainingWeeks" class="text-white">2,060</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Progress Bar Comparison -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex justify-between">
+                        <span data-i18n="titleBarComparison">Demographic Baseline vs. Your Target</span>
+                        <span id="barDiffLabel" class="text-emerald-600 dark:text-emerald-400 font-bold">+4.5 Yrs</span>
+                    </h3>
+
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-600 dark:text-slate-400" data-i18n="barBaselineLabel">Regional Baseline Average</span>
+                                <span id="barBaselineVal" class="font-bold text-slate-700 dark:text-slate-300">80.0 yrs</span>
+                            </div>
+                            <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div id="barBaselineFill" class="h-full bg-slate-400 transition-all duration-500" style="width: 75%;"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-slate-800 dark:text-slate-200" data-i18n="barUserLabel">Your Projected Lifespan</span>
+                                <span id="barUserVal" class="font-bold text-brand-600 dark:text-brand-400">84.5 yrs</span>
+                            </div>
+                            <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div id="barUserFill" class="h-full bg-brand-500 transition-all duration-500" style="width: 82%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Factor Breakdown List -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-4 pb-2 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                        <span data-i18n="titleBreakdown">Factor Impact Breakdown</span>
+                        <i class="fa-solid fa-chart-pie text-slate-400"></i>
+                    </h3>
+
+                    <div id="modifiersList" class="space-y-3 text-sm">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <!-- Explanation Toggle -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <button id="toggleDetailsBtn" class="w-full flex items-center justify-between text-left text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-circle-info text-brand-500"></i>
+                            <span data-i18n="titleDetails">How Actuarial Calculation Works</span>
+                        </span>
+                        <i id="detailsChevron" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+                    </button>
+
+                    <div id="detailsPanel" class="hidden mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 space-y-2">
+                        <p data-i18n="detailsP1"><strong>Baseline Standard:</strong> Built upon combined period life table estimates published by national statistical agencies (e.g., UK ONS / France INSEE).</p>
+                        <p data-i18n="detailsP2"><strong>Survivorship Bias:</strong> As age increases, total expected age increases because early life mortality risks have already been survived.</p>
+                        <p data-i18n="detailsP3"><strong>Disclaimer:</strong> This tool generates statistical estimations based on public demographic risk factors for educational purposes and does not substitute medical advice.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let currentLang = 'en';
+
+        const i18n = {
+            en: {
+                appSubtitle: 'Actuarial Longevity Estimator',
+                aboutBtn: 'About',
+                creatorLabel: 'Creator:',
+                assistedLabel: 'Assisted by:',
+                aboutDesc1: 'Welcome to <strong>T2Die</strong>—a witty, cheeky, yet mathematically grounded actuarial mortality estimator!',
+                aboutDesc2: 'Whether you are planning your retirement standard or simply curious how much your daily habits skew your statistical expiration date, <strong>T2Die</strong> pairs demographic life expectancy baselines (from global statistical datasets like ONS and INSEE) with body metrics, lifestyle factors, personal health conditions, and occupational hazard scores.',
+                aboutDesc3: '100% offline, privacy-focused, and free of pop-up ads. Remember: statistics predict cohorts, not individuals—so keep exercising and enjoy the ride!',
+                aboutClose: 'Got it!',
+                presetsLabel: 'Quick Load Test Profiles:',
+                presetHealthy: '🌱 Healthy Desk Worker',
+                presetSmoker: '🚬 Heavy Smoker / Sedentary',
+                presetSenior: '🏃 Active Senior (65+)',
+                presetDrinker: '🍺 Sedentary Heavy Drinker',
+                presetSmokerDrinker: '💀 Sedentary Heavy Smoker & Drinker',
+                secDemographics: '1. Baseline Demographics',
+                labelAge: 'Current Age:',
+                unitYears: 'years',
+                labelSex: 'Biological Sex',
+                sexMale: 'Male',
+                sexFemale: 'Female',
+                labelRegion: 'Regional Actuarial Data Baseline',
+                optRegionUk: 'United Kingdom (ONS Official Tables)',
+                optRegionFr: 'France (INSEE Official Tables)',
+                secPhysical: '2. Physical Profile & Health History',
+                labelHeight: 'Height:',
+                labelWeight: 'Weight:',
+                labelHealthHistory: 'Personal Medical Conditions (Check all that apply):',
+                condCardioLabel: 'Cardiovascular / Heart Disease',
+                condStrokeLabel: 'Stroke / TIA History',
+                condCancerLabel: 'Cancer History (Active / Remission)',
+                condDiabetesLabel: 'Type 2 Diabetes',
+                condHypertensionLabel: 'Hypertension / High Blood Pressure',
+                secLifestyle: '3. Lifestyle & Environment',
+                labelSmoking: 'Tobacco Usage',
+                optSmokeNever: 'Never smoked / Non-smoker',
+                optSmokeExLong: 'Ex-smoker (Quit > 10 years)',
+                optSmokeExMed: 'Ex-smoker (Quit 5–10 years)',
+                optSmokeExShort: 'Ex-smoker (Quit < 5 years)',
+                optSmokeLight: 'Light smoker (< 10 daily)',
+                optSmokeHeavy: 'Heavy smoker (10+ daily)',
+                labelExercise: 'Exercise / Movement (Weekly)',
+                optExLessHalf: 'Less than half hour / week',
+                optExOverHalf: '0.5 – 1 hour / week',
+                optExOverOne: '1 – 3 hours / week',
+                optExOverThree: 'Over 3 hours / week',
+                labelAlcohol: 'Alcohol Consumption',
+                optAlcNone: 'None / Rare (<1 unit/week)',
+                optAlcMod: 'Moderate (1–14 units/week)',
+                optAlcHigh: 'High (15–28 units/week)',
+                optAlcExtreme: 'Heavy (28+ units/week)',
+                labelOccupation: 'Occupational Risk Level',
+                optOccLow: 'Low Risk (Office / Remote)',
+                optOccMed: 'Medium Risk (Active / Retail)',
+                optOccHigh: 'High Risk (Construction / Hazard)',
+                labelGenetics: 'Earliest Deceased Relative (Parents/Grandparents)',
+                geneticsHint: 'Based on the shortest non-accidental lifespan among your 6 parents & grandparents.',
+                optGenHigh: 'All Lived Very Long (All 90+ years)',
+                optGenAboveAvg: 'Most Lived Above Average (80–90 years)',
+                optGenAvg: 'Average / Normal Lifespans (73–80 years)',
+                optGenLow: 'At least 1 Premature Death (< 73 years)',
+                labelGeneticsCause: 'Hereditary Causes of Premature Deaths (Check all that apply):',
+                optCauseNone: 'None / Accidental / Non-Hereditary',
+                optCauseCardio: 'Cardiovascular / Heart Attack',
+                optCauseStroke: 'Cerebrovascular / Stroke',
+                optCauseCancer: 'Hereditary Cancer',
+                optCauseDiabetes: 'Type 2 Diabetes / Renal',
+                optCauseDementia: 'Neurodegenerative / Early Dementia',
+                kpiHeader: 'Actuarial Longevity Projection',
+                btnCopy: 'Copy',
+                btnCopied: 'Copied!',
+                btnExportHtml: 'Export HTML',
+                btnExportedHtml: 'Saved!',
+                kpiEstimatedSuffix: 'years estimated lifespan',
+                kpiRemainingYears: 'Remaining Years',
+                kpiNetShift: 'Actuarial Net Shift',
+                kpiDays: 'Est. Remaining Days:',
+                kpiWeeks: 'Weeks:',
+                titleBarComparison: 'Demographic Baseline vs. Your Target',
+                barBaselineLabel: 'Regional Baseline Average',
+                barUserLabel: 'Your Projected Lifespan',
+                titleBreakdown: 'Factor Impact Breakdown',
+                titleDetails: 'How Actuarial Calculation Works',
+                detailsP1: '<strong>Baseline Standard:</strong> Built upon combined period life table estimates published by national statistical agencies (e.g., UK ONS / France INSEE).',
+                detailsP2: '<strong>Survivorship Bias:</strong> As age increases, total expected age increases because early life mortality risks have already been survived.',
+                detailsP3: '<strong>Disclaimer:</strong> This tool generates statistical estimations based on public demographic risk factors for educational purposes and does not substitute medical advice.',
+                bmiUnderweight: 'Underweight',
+                bmiOptimal: 'Optimal',
+                bmiOverweight: 'Overweight',
+                bmiObese: 'Obese (Class I)',
+                bmiSevere: 'Severe Obesity',
+                modBmi: 'BMI',
+                modHealthHistory: 'Personal Health Conditions',
+                modTobacco: 'Tobacco Habits',
+                modExercise: 'Physical Activity',
+                modAlcohol: 'Alcohol Consumption',
+                modOccupation: 'Occupational Hazard',
+                modGenetics: 'Family Longevity'
+            },
+            fr: {
+                appSubtitle: "Estimateur d'Espérance de Vie Actuarielle",
+                aboutBtn: 'À propos',
+                creatorLabel: 'Créateur :',
+                assistedLabel: 'Assisté par :',
+                aboutDesc1: 'Bienvenue sur <strong>T2Die</strong>—un calculateur actuariel d’espérance de vie ludique, impertinent et scientifiquement fondé !',
+                aboutDesc2: 'Que vous prépariez votre retraite ou soyez simplement curieux de voir l’impact de vos habitudes quotidiennes sur votre date d’expiration statistique, <strong>T2Die</strong> croise les tables de mortalité officielles (issue de l’INSEE et de l\'ONS) avec votre physique, votre mode de vie, vos antécédents médicaux et vos risques professionnels.',
+                aboutDesc3: '100% hors ligne, respectueux de votre vie privée et sans publicité. N’oubliez pas : les statistiques décrivent des populations, pas des individus—alors restez actif et profitez de la vie !',
+                aboutClose: 'Compris !',
+                presetsLabel: 'Profils de test rapides :',
+                presetHealthy: '🌱 Employé de bureau sain',
+                presetSmoker: '🚬 Fumeur / Sédentaire',
+                presetSenior: '🏃 Senior Actif (65+)',
+                presetDrinker: '🍺 Sédentaire Grand Buveur',
+                presetSmokerDrinker: '💀 Sédentaire Fumeur & Buveur',
+                secDemographics: '1. Démographie de base',
+                labelAge: 'Âge actuel :',
+                unitYears: 'ans',
+                labelSex: 'Sexe biologique',
+                sexMale: 'Homme',
+                sexFemale: 'Femme',
+                labelRegion: 'Données actuarielles régionales',
+                optRegionUk: 'Royaume-Uni (Tables officielles ONS)',
+                optRegionFr: 'France (Tables officielles INSEE)',
+                secPhysical: '2. Profil physique et Santé',
+                labelHeight: 'Taille :',
+                labelWeight: 'Poids :',
+                labelHealthHistory: 'Pathologies personnelles (Cochez toutes les options applicables) :',
+                condCardioLabel: 'Maladie Cardiovasculaire / Cardiaque',
+                condStrokeLabel: 'Antécédent d’AVC / AIT',
+                condCancerLabel: 'Antécédent de Cancer (Actif / Rémis)',
+                condDiabetesLabel: 'Diabète de type 2',
+                condHypertensionLabel: 'Hypertension artérielle',
+                secLifestyle: '3. Mode de vie et environnement',
+                labelSmoking: 'Consommation de tabac',
+                optSmokeNever: 'Non-fumeur / Jamais fumé',
+                optSmokeExLong: 'Ex-fumeur (Arrêt > 10 ans)',
+                optSmokeExMed: 'Ex-fumeur (Arrêt 5–10 ans)',
+                optSmokeExShort: 'Ex-fumeur (Arrêt < 5 ans)',
+                optSmokeLight: 'Fumeur modéré (< 10/jour)',
+                optSmokeHeavy: 'Grand fumeur (10+/jour)',
+                labelExercise: 'Exercice / Activité (Hebdomadaire)',
+                optExLessHalf: 'Moins d’une demi-heure / semaine',
+                optExOverHalf: '0,5 – 1 heure / semaine',
+                optExOverOne: '1 – 3 heures / semaine',
+                optExOverThree: 'Plus de 3 heures / semaine',
+                labelAlcohol: 'Consommation d’alcool',
+                optAlcNone: 'Aucune / Rare (<1 unité/semaine)',
+                optAlcMod: 'Modérée (1–14 unités/semaine)',
+                optAlcHigh: 'Élevée (15–28 unités/semaine)',
+                optAlcExtreme: 'Très élevée (28+ unités/semaine)',
+                labelOccupation: 'Niveau de risque professionnel',
+                optOccLow: 'Risque faible (Bureau / Télétravail)',
+                optOccMed: 'Risque moyen (Actif / Commerce)',
+                optOccHigh: 'Risque élevé (BTP / Métiers dangereux)',
+                labelGenetics: 'Parent/Grand-parent décédé le plus jeune',
+                geneticsHint: 'Basé sur la plus courte longévité non-accidentelle parmi vos 6 ascendants directs.',
+                optGenHigh: 'Tous ont vécu très longtemps (Tous 90+ ans)',
+                optGenAboveAvg: 'La plupart au-dessus de la moyenne (80–90 ans)',
+                optGenAvg: 'Longévité moyenne / normale (73–80 ans)',
+                optGenLow: 'Au moins 1 décès prématuré (< 73 ans)',
+                labelGeneticsCause: 'Causes héréditaires de décès prématurés (Cochez tout ce qui s’applique) :',
+                optCauseNone: 'Aucune / Accidentel / Non-héréditaire',
+                optCauseCardio: 'Cardiovasculaire / Crise cardiaque',
+                optCauseStroke: 'Cérébrovasculaire / AVC',
+                optCauseCancer: 'Cancer héréditaire',
+                optCauseDiabetes: 'Diabète de type 2 / Maladie rénale',
+                optCauseDementia: 'Neurodégénératif / Démence précoce',
+                kpiHeader: 'Projection Actuarielle de Longévité',
+                btnCopy: 'Copier',
+                btnCopied: 'Copié !',
+                btnExportHtml: 'Exporter HTML',
+                btnExportedHtml: 'Enregistré !',
+                kpiEstimatedSuffix: 'ans d’espérance de vie estimée',
+                kpiRemainingYears: 'Années restantes',
+                kpiNetShift: 'Écart actuariel net',
+                kpiDays: 'Jours restants est. :',
+                kpiWeeks: 'Semaines :',
+                titleBarComparison: 'Moyenne Régionale vs Votre Objectif',
+                barBaselineLabel: 'Moyenne Régionale de Base',
+                barUserLabel: 'Votre Espérance de Vie Projetée',
+                titleBreakdown: 'Détail des facteurs d’impact',
+                titleDetails: 'Comment fonctionne le calcul actuariel',
+                detailsP1: '<strong>Base statistique :</strong> Basée sur les tables de mortalité officielles publiées par les instituts nationaux de statistique (ex. INSEE / ONS).',
+                detailsP2: '<strong>Biais de survie :</strong> Plus votre âge avance, plus votre espérance totale augmente car les risques de mortalité précoces sont déjà surmontés.',
+                detailsP3: '<strong>Avertissement :</strong> Cet outil génère une estimation statistique à titre éducatif et ne remplace en aucun cas un avis médical.',
+                bmiUnderweight: 'Insuffisance pondérale',
+                bmiOptimal: 'Corpulence normale',
+                bmiOverweight: 'Surpoids',
+                bmiObese: 'Obésité (Classe I)',
+                bmiSevere: 'Obésité sévère',
+                modBmi: 'IMC',
+                modHealthHistory: 'Conditions de santé personnelles',
+                modTobacco: 'Tabagisme',
+                modExercise: 'Activité physique',
+                modAlcohol: 'Consommation d’alcool',
+                modOccupation: 'Risque professionnel',
+                modGenetics: 'Longévité familiale'
+            }
+        };
+
+        const regionalActuarialTables = {
+            uk: {
+                18: { male: 60.5, female: 64.2 },
+                25: { male: 53.8, female: 57.4 },
+                35: { male: 44.3, female: 47.7 },
+                45: { male: 35.0, female: 38.2 },
+                55: { male: 26.0, female: 29.0 },
+                65: { male: 17.8, female: 20.4 },
+                75: { male: 10.8, female: 12.6 },
+                85: { male: 5.6,  female: 6.6 },
+                95: { male: 2.5,  female: 2.9 }
+            },
+            fr: {
+                18: { male: 61.8, female: 67.1 },
+                25: { male: 55.0, female: 60.3 },
+                35: { male: 45.4, female: 50.5 },
+                45: { male: 36.0, female: 40.9 },
+                55: { male: 27.1, female: 31.6 },
+                65: { male: 18.9, female: 22.8 },
+                75: { male: 11.6, female: 14.5 },
+                85: { male: 6.1,  female: 7.7 },
+                95: { male: 2.8,  female: 3.5 }
+            }
+        };
+
+        // DOM Elements
+        const ageInput = document.getElementById('age');
+        const ageVal = document.getElementById('ageVal');
+        const heightInput = document.getElementById('height');
+        const heightVal = document.getElementById('heightVal');
+        const weightInput = document.getElementById('weight');
+        const weightVal = document.getElementById('weightVal');
+        const regionInput = document.getElementById('region');
+
+        const condCardio = document.getElementById('condCardio');
+        const condStroke = document.getElementById('condStroke');
+        const condCancer = document.getElementById('condCancer');
+        const condDiabetes = document.getElementById('condDiabetes');
+        const condHypertension = document.getElementById('condHypertension');
+
+        const bmiDisplay = document.getElementById('bmiDisplay');
+        const bmiCategory = document.getElementById('bmiCategory');
+
+        const smokingInput = document.getElementById('smoking');
+        const exerciseInput = document.getElementById('exercise');
+        const alcoholInput = document.getElementById('alcohol');
+        const occupationInput = document.getElementById('occupation');
+        const geneticsInput = document.getElementById('genetics');
+        const causeCardio = document.getElementById('causeCardio');
+        const causeStroke = document.getElementById('causeStroke');
+        const causeCancer = document.getElementById('causeCancer');
+        const causeDiabetes = document.getElementById('causeDiabetes');
+        const causeDementia = document.getElementById('causeDementia');
+
+        const estimatedAgeElem = document.getElementById('estimatedAge');
+        const remainingYearsElem = document.getElementById('remainingYears');
+        const netShiftElem = document.getElementById('netShift');
+        const remainingDaysElem = document.getElementById('remainingDays');
+        const remainingWeeksElem = document.getElementById('remainingWeeks');
+        const modifiersListElem = document.getElementById('modifiersList');
+
+        const barBaselineVal = document.getElementById('barBaselineVal');
+        const barUserVal = document.getElementById('barUserVal');
+        const barBaselineFill = document.getElementById('barBaselineFill');
+        const barUserFill = document.getElementById('barUserFill');
+        const barDiffLabel = document.getElementById('barDiffLabel');
+
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const toggleDetailsBtn = document.getElementById('toggleDetailsBtn');
+        const detailsPanel = document.getElementById('detailsPanel');
+        const detailsChevron = document.getElementById('detailsChevron');
+        const shareBtn = document.getElementById('shareBtn');
+        const shareBtnText = document.getElementById('shareBtnText');
+        const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+        const exportHtmlBtnText = document.getElementById('exportHtmlBtnText');
+
+        const langEnBtn = document.getElementById('langEnBtn');
+        const langFrBtn = document.getElementById('langFrBtn');
+
+        const aboutBtn = document.getElementById('aboutBtn');
+        const aboutModal = document.getElementById('aboutModal');
+        const aboutModalContent = document.getElementById('aboutModalContent');
+        const closeAboutBtn = document.getElementById('closeAboutBtn');
+        const closeAboutModalBtn = document.getElementById('closeAboutModalBtn');
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            if (lang === 'fr') {
+                langFrBtn.className = "px-2.5 py-1 rounded-lg transition-all bg-brand-600 text-white shadow-sm";
+                langEnBtn.className = "px-2.5 py-1 rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200";
+            } else {
+                langEnBtn.className = "px-2.5 py-1 rounded-lg transition-all bg-brand-600 text-white shadow-sm";
+                langFrBtn.className = "px-2.5 py-1 rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200";
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(elem => {
+                const key = elem.getAttribute('data-i18n');
+                if (i18n[lang][key]) {
+                    elem.innerHTML = i18n[lang][key];
+                }
+            });
+
+            calculateMortality();
+        }
+
+        langEnBtn.addEventListener('click', () => setLanguage('en'));
+        langFrBtn.addEventListener('click', () => setLanguage('fr'));
+
+        function openModal() {
+            aboutModal.classList.remove('hidden');
+            setTimeout(() => {
+                aboutModalContent.classList.remove('scale-95', 'opacity-0');
+                aboutModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            aboutModalContent.classList.remove('scale-100', 'opacity-100');
+            aboutModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                aboutModal.classList.add('hidden');
+            }, 200);
+        }
+
+        aboutBtn.addEventListener('click', openModal);
+        closeAboutBtn.addEventListener('click', closeModal);
+        closeAboutModalBtn.addEventListener('click', closeModal);
+        aboutModal.addEventListener('click', (e) => {
+            if (e.target === aboutModal) closeModal();
+        });
+
+        function loadPreset(presetType) {
+            condCardio.checked = false;
+            condStroke.checked = false;
+            condCancer.checked = false;
+            condDiabetes.checked = false;
+            condHypertension.checked = false;
+
+            causeCardio.checked = false;
+            causeStroke.checked = false;
+            causeCancer.checked = false;
+            causeDiabetes.checked = false;
+            causeDementia.checked = false;
+
+            if (presetType === 'healthy') {
+                ageInput.value = 35;
+                heightInput.value = 178;
+                weightInput.value = 72;
+                smokingInput.value = 'never';
+                exerciseInput.value = 'over_three';
+                alcoholInput.value = 'moderate';
+                occupationInput.value = 'low';
+                geneticsInput.value = 'exceptional';
+            } else if (presetType === 'sedentary') {
+                ageInput.value = 50;
+                heightInput.value = 170;
+                weightInput.value = 98;
+                smokingInput.value = 'heavy';
+                exerciseInput.value = 'less_half';
+                alcoholInput.value = 'extreme';
+                occupationInput.value = 'high';
+                geneticsInput.value = 'premature';
+                causeCardio.checked = true;
+                condHypertension.checked = true;
+            } else if (presetType === 'senior') {
+                ageInput.value = 68;
+                heightInput.value = 165;
+                weightInput.value = 65;
+                smokingInput.value = 'ex_long';
+                exerciseInput.value = 'over_one';
+                alcoholInput.value = 'moderate';
+                occupationInput.value = 'low';
+                geneticsInput.value = 'above_avg';
+            } else if (presetType === 'drinker') {
+                ageInput.value = 45;
+                heightInput.value = 175;
+                weightInput.value = 85;
+                smokingInput.value = 'never';
+                exerciseInput.value = 'less_half';
+                alcoholInput.value = 'extreme';
+                occupationInput.value = 'low';
+                geneticsInput.value = 'average';
+            } else if (presetType === 'smoker_drinker') {
+                ageInput.value = 48;
+                heightInput.value = 175;
+                weightInput.value = 90;
+                smokingInput.value = 'heavy';
+                exerciseInput.value = 'less_half';
+                alcoholInput.value = 'extreme';
+                occupationInput.value = 'medium';
+                geneticsInput.value = 'premature';
+                causeCardio.checked = true;
+                causeCancer.checked = true;
+                condCardio.checked = true;
+                condHypertension.checked = true;
+            }
+            calculateMortality();
+        }
+
+        const inputs = [ageInput, heightInput, weightInput, regionInput, smokingInput, exerciseInput, alcoholInput, occupationInput, geneticsInput, causeCardio, causeStroke, causeCancer, causeDiabetes, causeDementia, condCardio, condStroke, condCancer, condDiabetes, condHypertension];
+        inputs.forEach(input => input.addEventListener('input', calculateMortality));
+        inputs.forEach(input => input.addEventListener('change', calculateMortality));
+        
+        document.querySelectorAll('input[name="sex"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateSexStyle();
+                calculateMortality();
+            });
+        });
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        toggleDetailsBtn.addEventListener('click', () => {
+            detailsPanel.classList.toggle('hidden');
+            detailsChevron.classList.toggle('rotate-180');
+        });
+
+        shareBtn.addEventListener('click', () => {
+            const age = ageInput.value;
+            const est = estimatedAgeElem.textContent;
+            const rem = remainingYearsElem.textContent;
+            const shift = netShiftElem.textContent;
+            const text = `T2Die Actuarial Projection:\nCurrent Age: ${age}\nProjected Life Expectancy: ${est} years\nRemaining Years: ${rem} years (${shift})\nCalculated with T2Die (by Stephen RICHARDS & Gemini AI)`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+
+            shareBtnText.textContent = i18n[currentLang].btnCopied;
+            setTimeout(() => {
+                shareBtnText.textContent = i18n[currentLang].btnCopy;
+            }, 2000);
+        });
+
+        exportHtmlBtn.addEventListener('click', () => {
+            const dict = i18n[currentLang];
+            const age = ageInput.value;
+            const heightCm = heightInput.value;
+            const weightKg = weightInput.value;
+            const sex = document.querySelector('input[name="sex"]:checked').value === 'male' ? (currentLang === 'fr' ? 'Homme' : 'Male') : (currentLang === 'fr' ? 'Femme' : 'Female');
+            const regionName = regionInput.options[regionInput.selectedIndex].text;
+            const bmiVal = bmiDisplay.textContent;
+            const bmiCat = bmiCategory.textContent;
+
+            const est = estimatedAgeElem.textContent;
+            const rem = remainingYearsElem.textContent;
+            const shift = netShiftElem.textContent;
+            const days = remainingDaysElem.textContent;
+            const weeks = remainingWeeksElem.textContent;
+            const dateStr = new Date().toLocaleDateString(currentLang === 'fr' ? 'fr-FR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            // Extract factor names, selected user input values, and numeric shift values from UI
+            let modifiersHtml = '';
+            document.querySelectorAll('#modifiersList > div').forEach(node => {
+                const categoryName = node.querySelector('.font-medium')?.textContent || '';
+                const userChoiceDetail = node.querySelector('.factor-detail')?.textContent || '';
+                const shiftSpan = node.querySelector('span:last-child');
+                const shiftText = shiftSpan ? shiftSpan.textContent.trim() : '0.0 yrs';
+                
+                const isPositive = shiftText.startsWith('+');
+                const isNegative = shiftText.startsWith('-');
+
+                const badgeBg = isPositive ? '#ecfdf5' : (isNegative ? '#fef2f2' : '#f8fafc');
+                const badgeColor = isPositive ? '#047857' : (isNegative ? '#b91c1c' : '#475569');
+                const badgeBorder = isPositive ? '#a7f3d0' : (isNegative ? '#fecaca' : '#e2e8f0');
+
+                modifiersHtml += `
+                <div style="background: ${badgeBg}; border: 1px solid ${badgeBorder}; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 700; color: #0f172a; font-size: 14px;">${categoryName}</div>
+                        ${userChoiceDetail ? `<div style="font-size: 12px; color: #64748b; font-weight: 500; margin-top: 2px;">${userChoiceDetail}</div>` : ''}
+                    </div>
+                    <span style="font-weight: 800; color: ${badgeColor}; font-size: 14px; padding: 6px 14px; background: rgba(255,255,255,0.95); border-radius: 8px; border: 1px solid ${badgeBorder}; white-space: nowrap;">${shiftText}</span>
+                </div>`;
+            });
+
+            const fileContent = `<!DOCTYPE html>
+<html lang="${currentLang}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyT2Die - Actuarial Assessment Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f172a; color: #334155; margin: 0; padding: 40px 16px; min-height: 100vh; }
+        .container { max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); border: 1px solid #334155; }
+        .header { background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%); color: white; padding: 36px 32px; position: relative; }
+        .brand { font-size: 32px; font-weight: 800; tracking-tight: -0.02em; margin: 0; display: flex; align-items: center; gap: 10px; }
+        .brand span { color: #f43f5e; }
+        .tagline { color: #bae6fd; font-size: 13px; font-weight: 500; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .timestamp { position: absolute; top: 36px; right: 32px; font-size: 11px; background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; backdrop-filter: blur(4px); color: #f0f9ff; }
+        
+        .hero-banner { background: #0284c7; color: white; padding: 28px 32px; text-align: center; border-bottom: 1px solid #0369a1; }
+        .hero-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #e0f2fe; font-weight: 600; }
+        .hero-value { font-size: 64px; font-weight: 900; line-height: 1; margin: 8px 0; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .hero-unit { font-size: 20px; font-weight: 500; color: #bae6fd; }
+        
+        .grid-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px 32px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+        .stat-box { text-align: center; padding: 12px; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+        .stat-val { font-size: 16px; font-weight: 800; color: #0f172a; }
+
+        .content { padding: 32px; }
+        .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; justify-space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        
+        .params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+        .param-item { background: #f8fafc; padding: 10px 14px; border-radius: 10px; font-size: 13px; border: 1px solid #f1f5f9; }
+        .param-item strong { color: #0f172a; font-weight: 600; }
+
+        .footer { background: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
+        @media (max-width: 600px) {
+            .grid-stats { grid-template-columns: 1fr 1fr; }
+            .params-grid { grid-template-columns: 1fr; }
+            .timestamp { position: static; margin-top: 12px; display: inline-block; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="brand">T2<span>Die</span></h1>
+            <div class="tagline">${dict.appSubtitle}</div>
+            <div class="timestamp">${dateStr}</div>
+        </div>
+
+        <div class="hero-banner">
+            <div class="hero-title">${dict.kpiHeader}</div>
+            <div class="hero-value">${est} <span class="hero-unit">${dict.unitYears}</span></div>
+        </div>
+
+        <div class="grid-stats">
+            <div class="stat-box">
+                <div class="stat-label">${dict.kpiRemainingYears}</div>
+                <div class="stat-val">${rem} ${dict.unitYears}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">${dict.kpiNetShift}</div>
+                <div class="stat-val" style="color: ${shift.includes('+') ? '#10b981' : '#f43f5e'};">${shift}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">${currentLang === 'fr' ? 'Jours Restants' : 'Remaining Days'}</div>
+                <div class="stat-val">${days}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">${currentLang === 'fr' ? 'Semaines' : 'Weeks'}</div>
+                <div class="stat-val">${weeks}</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section-title">${currentLang === 'fr' ? 'Profil & Données Saisies' : 'Profile & Input Demographics'}</div>
+            <div class="params-grid">
+                <div class="param-item">${currentLang === 'fr' ? 'Âge actuel' : 'Current Age'}: <strong>${age} ${dict.unitYears}</strong></div>
+                <div class="param-item">${currentLang === 'fr' ? 'Sexe biologique' : 'Biological Sex'}: <strong>${sex}</strong></div>
+                <div class="param-item">${currentLang === 'fr' ? 'Taille / Poids' : 'Height / Weight'}: <strong>${heightCm} cm / ${weightKg} kg</strong></div>
+                <div class="param-item">${currentLang === 'fr' ? 'Indice de Masse Corporelle (IMC)' : 'BMI Score'}: <strong>${bmiVal} (${bmiCat})</strong></div>
+                <div class="param-item" style="grid-column: span 2;">${currentLang === 'fr' ? 'Table de Mortalité Régionale' : 'Actuarial Baseline'}: <strong>${regionName}</strong></div>
+            </div>
+
+            <div class="section-title">${dict.titleBreakdown}</div>
+            <div>
+                ${modifiersHtml}
+            </div>
+        </div>
+
+        <div class="footer">
+            Generated by <strong>T2Die</strong> &bull; Created by Stephen RICHARDS & Gemini AI &bull; ${dict.detailsP3}
+        </div>
+    </div>
+</body>
+</html>`;
+
+            const blob = new Blob([fileContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'MyT2Die.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            exportHtmlBtnText.textContent = i18n[currentLang].btnExportedHtml;
+            setTimeout(() => {
+                exportHtmlBtnText.textContent = i18n[currentLang].btnExportHtml;
+            }, 2000);
+        });
+
+        function getBaselineRemainingYears(age, sex, region) {
+            const table = regionalActuarialTables[region] || regionalActuarialTables.uk;
+            const ages = Object.keys(table).map(Number).sort((a,b) => a - b);
+            
+            if (age <= ages[0]) return table[ages[0]][sex];
+            if (age >= ages[ages.length - 1]) return table[ages[ages.length - 1]][sex];
+
+            for (let i = 0; i < ages.length - 1; i++) {
+                if (age >= ages[i] && age <= ages[i+1]) {
+                    const minAge = ages[i];
+                    const maxAge = ages[i+1];
+                    const factor = (age - minAge) / (maxAge - minAge);
+                    const minVal = table[minAge][sex];
+                    const maxVal = table[maxAge][sex];
+                    return minVal + factor * (maxVal - minVal);
+                }
+            }
+            return 35.0;
+        }
+
+        function updateSexStyle() {
+            const selectedSex = document.querySelector('input[name="sex"]:checked').value;
+            const maleLabel = document.getElementById('sexMaleLabel');
+            const femaleLabel = document.getElementById('sexFemaleLabel');
+
+            if (selectedSex === 'male') {
+                maleLabel.classList.add('border-brand-500', 'bg-brand-50', 'dark:bg-slate-700');
+                femaleLabel.classList.remove('border-brand-500', 'bg-brand-50', 'dark:bg-slate-700');
+            } else {
+                femaleLabel.classList.add('border-brand-500', 'bg-brand-50', 'dark:bg-slate-700');
+                maleLabel.classList.remove('border-brand-500', 'bg-brand-50', 'dark:bg-slate-700');
+            }
+        }
+
+        function calculateMortality() {
+            const dict = i18n[currentLang];
+
+            const age = parseInt(ageInput.value, 10);
+            const heightCm = parseInt(heightInput.value, 10);
+            const weightKg = parseInt(weightInput.value, 10);
+            const sex = document.querySelector('input[name="sex"]:checked').value;
+            const region = regionInput.value;
+
+            ageVal.textContent = age;
+            heightVal.textContent = heightCm;
+            weightVal.textContent = weightKg;
+
+            // 1. BMI Calculation
+            const heightM = heightCm / 100;
+            const bmi = weightKg / (heightM * heightM);
+            bmiDisplay.textContent = bmi.toFixed(1);
+
+            let bmiShift = 0;
+            let bmiCatText = dict.bmiOptimal;
+            if (bmi < 18.5) {
+                bmiShift = -2.0;
+                bmiCatText = dict.bmiUnderweight;
+            } else if (bmi >= 18.5 && bmi < 25) {
+                bmiShift = 1.0;
+                bmiCatText = dict.bmiOptimal;
+            } else if (bmi >= 25 && bmi < 30) {
+                bmiShift = -0.5;
+                bmiCatText = dict.bmiOverweight;
+            } else if (bmi >= 30 && bmi < 35) {
+                bmiShift = -2.5;
+                bmiCatText = dict.bmiObese;
+            } else {
+                bmiShift = -5.0;
+                bmiCatText = dict.bmiSevere;
+            }
+            bmiCategory.textContent = bmiCatText;
+
+            // 2. Actuarial Baseline
+            const baseRemaining = getBaselineRemainingYears(age, sex, region);
+            const baselineTotalExp = age + baseRemaining;
+
+            // 3. Modifiers Array
+            const modifiers = [];
+
+            modifiers.push({
+                name: `${dict.modBmi} (${bmiCatText})`,
+                detail: `BMI: ${bmi.toFixed(1)} (${bmiCatText})`,
+                shift: bmiShift,
+                icon: 'fa-weight-scale'
+            });
+
+            // Cumulative Health Checkbox Penalties & Dynamic Labels
+            let healthShift = 0;
+            let selectedHealthConds = [];
+            if (condCardio.checked) { healthShift -= 3.5; selectedHealthConds.push(dict.condCardioLabel); }
+            if (condStroke.checked) { healthShift -= 3.0; selectedHealthConds.push(dict.condStrokeLabel); }
+            if (condCancer.checked) { healthShift -= 3.0; selectedHealthConds.push(dict.condCancerLabel); }
+            if (condDiabetes.checked) { healthShift -= 2.5; selectedHealthConds.push(dict.condDiabetesLabel); }
+            if (condHypertension.checked) { healthShift -= 1.5; selectedHealthConds.push(dict.condHypertensionLabel); }
+
+            if (healthShift !== 0) {
+                modifiers.push({
+                    name: dict.modHealthHistory,
+                    detail: selectedHealthConds.join(', '),
+                    shift: healthShift,
+                    icon: 'fa-notes-medical'
+                });
+            }
+
+            let smokingShift = 0;
+            switch(smokingInput.value) {
+                case 'never': smokingShift = +1.5; break;
+                case 'ex_long': smokingShift = +0.5; break;
+                case 'ex_med': smokingShift = -0.5; break;
+                case 'ex_short': smokingShift = -1.5; break;
+                case 'light': smokingShift = -4.5; break;
+                case 'heavy': smokingShift = -8.0; break;
+            }
+            modifiers.push({
+                name: dict.modTobacco,
+                detail: smokingInput.options[smokingInput.selectedIndex].text,
+                shift: smokingShift,
+                icon: 'fa-smoking'
+            });
+
+            let exerciseShift = 0;
+            switch(exerciseInput.value) {
+                case 'less_half': exerciseShift = -1.5; break;
+                case 'over_half': exerciseShift = +1.0; break;
+                case 'over_one': exerciseShift = +2.5; break;
+                case 'over_three': exerciseShift = +4.0; break;
+            }
+            modifiers.push({
+                name: dict.modExercise,
+                detail: exerciseInput.options[exerciseInput.selectedIndex].text,
+                shift: exerciseShift,
+                icon: 'fa-person-running'
+            });
+
+            let alcoholShift = 0;
+            switch(alcoholInput.value) {
+                case 'none': alcoholShift = 0; break;
+                case 'moderate': alcoholShift = +0.5; break;
+                case 'high': alcoholShift = -2.5; break;
+                case 'extreme': alcoholShift = -5.0; break;
+            }
+            modifiers.push({
+                name: dict.modAlcohol,
+                detail: alcoholInput.options[alcoholInput.selectedIndex].text,
+                shift: alcoholShift,
+                icon: 'fa-wine-glass'
+            });
+
+            let occShift = 0;
+            switch(occupationInput.value) {
+                case 'low': occShift = +0.5; break;
+                case 'medium': occShift = 0; break;
+                case 'high': occShift = -2.0; break;
+            }
+            modifiers.push({
+                name: dict.modOccupation,
+                detail: occupationInput.options[occupationInput.selectedIndex].text,
+                shift: occShift,
+                icon: 'fa-briefcase'
+            });
+
+            let genShift = 0;
+            const genText = geneticsInput.options[geneticsInput.selectedIndex].text;
+            
+            let selectedCauses = [];
+            let causePenalties = 0;
+
+            if (causeCardio.checked) { causePenalties -= 2.0; selectedCauses.push(dict.optCauseCardio); }
+            if (causeStroke.checked) { causePenalties -= 2.0; selectedCauses.push(dict.optCauseStroke); }
+            if (causeCancer.checked) { causePenalties -= 1.5; selectedCauses.push(dict.optCauseCancer); }
+            if (causeDiabetes.checked) { causePenalties -= 1.5; selectedCauses.push(dict.optCauseDiabetes); }
+            if (causeDementia.checked) { causePenalties -= 1.5; selectedCauses.push(dict.optCauseDementia); }
+
+            switch(geneticsInput.value) {
+                case 'exceptional': 
+                    genShift = +3.5; 
+                    break;
+                case 'above_avg': 
+                    genShift = +1.5; 
+                    break;
+                case 'average': 
+                    genShift = 0; 
+                    break;
+                case 'premature': 
+                    genShift = -1.0 + causePenalties; 
+                    break;
+            }
+
+            let genDetailText = genText;
+            if (geneticsInput.value === 'premature' && selectedCauses.length > 0) {
+                genDetailText += ` (${selectedCauses.join(', ')})`;
+            }
+
+            modifiers.push({
+                name: dict.modGenetics,
+                detail: genDetailText,
+                shift: genShift,
+                icon: 'fa-dna'
+            });
+
+            const netShift = modifiers.reduce((acc, curr) => acc + curr.shift, 0);
+
+            let finalRemaining = Math.max(1.0, baseRemaining + netShift);
+            let finalEstimatedAge = age + finalRemaining;
+
+            estimatedAgeElem.textContent = finalEstimatedAge.toFixed(1);
+            remainingYearsElem.textContent = finalRemaining.toFixed(1);
+
+            const netShiftText = (netShift >= 0 ? '+' : '') + netShift.toFixed(1) + ' ' + (currentLang === 'fr' ? 'ans' : 'yrs');
+            netShiftElem.textContent = netShiftText;
+            netShiftElem.className = `text-2xl font-bold ${netShift >= 0 ? 'text-emerald-300' : 'text-rose-300'}`;
+
+            const daysRemaining = Math.round(finalRemaining * 365.25);
+            const weeksRemaining = Math.round(finalRemaining * 52.14);
+            remainingDaysElem.textContent = daysRemaining.toLocaleString();
+            remainingWeeksElem.textContent = weeksRemaining.toLocaleString();
+
+            const baselineValRounded = baselineTotalExp.toFixed(1);
+            const userValRounded = finalEstimatedAge.toFixed(1);
+            barBaselineVal.textContent = `${baselineValRounded} ${currentLang === 'fr' ? 'ans' : 'yrs'}`;
+            barUserVal.textContent = `${userValRounded} ${currentLang === 'fr' ? 'ans' : 'yrs'}`;
+            barDiffLabel.textContent = netShiftText;
+            barDiffLabel.className = `font-bold ${netShift >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`;
+
+            const basePercent = Math.min(100, Math.max(10, (baselineTotalExp / 105) * 100));
+            const userPercent = Math.min(100, Math.max(10, (finalEstimatedAge / 105) * 100));
+            barBaselineFill.style.width = `${basePercent}%`;
+            barUserFill.style.width = `${userPercent}%`;
+
+            modifiersListElem.innerHTML = '';
+            modifiers.forEach(mod => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700';
+                
+                const shiftColor = mod.shift > 0 
+                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold' 
+                    : (mod.shift < 0 ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-slate-400');
+                
+                const formattedShift = (mod.shift > 0 ? '+' : '') + mod.shift.toFixed(1) + ' ' + (currentLang === 'fr' ? 'ans' : 'yrs');
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-200 shrink-0">
+                            <i class="fa-solid ${mod.icon} text-xs"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-slate-800 dark:text-slate-200">${mod.name}</div>
+                            ${mod.detail ? `<div class="factor-detail text-xs text-slate-500 dark:text-slate-400">${mod.detail}</div>` : ''}
+                        </div>
+                    </div>
+                    <span class="${shiftColor} shrink-0 ml-2">${formattedShift}</span>
+                `;
+                modifiersListElem.appendChild(item);
+            });
+        }
+
+        window.onload = function() {
+            updateSexStyle();
+            calculateMortality();
+        }
+    </script>
+</body>
+</html>
