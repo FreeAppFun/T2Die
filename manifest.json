@@ -1,0 +1,20 @@
+{
+  "name": "T2Die - Actuarial Longevity Estimator",
+  "short_name": "T2Die",
+  "description": "Actuarial mortality estimator and health expectancy calculator.",
+  "id": "/T2Die/",
+  "start_url": "/T2Die/",
+  "scope": "/T2Die/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/T2Die/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
