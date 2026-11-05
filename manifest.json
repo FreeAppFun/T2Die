@@ -1,0 +1,19 @@
+{
+  "name": "T2Die",
+  "short_name": "T2Die",
+  "id": "https://freeappfun.github.io/T2Die/",
+  "start_url": "/T2Die/?source=pwa",
+  "scope": "/T2Die/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/T2Die/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
